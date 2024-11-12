@@ -1,0 +1,17 @@
+# Ignore backup and temporary files
+*.bak
+*.tmp
+*.swp
+
+# Ignore executable and debug files
+*.exe
+*.com
+*.obj
+*.o
+
+# Ignore listing files 
+*.lst
+
+# Ignore hidden system files
+.DS_Store
+Thumbs.db
