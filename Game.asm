@@ -16,9 +16,11 @@ paddleB_loc: dw 0
 Game_Start: dw 0
 A_Scores: dw 0
 B_Scores: dw 0
-GameEnd_string : db '*********Game Ended**********'
-playerA_wins_string : db 'Player A wins'
-playerB_wins_string : db 'Player B wins'
+GameEnd_string db "GAME OVER!", 0
+PlayerA_string db "PLAYER A WINS!", 0
+PlayerB_string db "PLAYER B WINS!", 0
+Border_char db 0xCD         ; '═' character for borders
+
 
 ;-------------------------------------------------
 ; Subroutine to clear the screen 
@@ -68,72 +70,120 @@ findBallLocation:
     ret
 
 ;----------------------------------------
+; Draw Borders
+;----------------------------------------
+
+draw_borders:
+    mov ax, 0xb800          ; Video memory segment
+    mov es, ax
+
+    ; Top border
+    mov cx, 80              ; Screen width
+    mov di, 0               ; Start at top-left
+TopBorder:
+    mov byte [es:di], Border_char
+    mov byte [es:di+1], 0x07 ; White color
+    add di, 2
+    loop TopBorder
+
+    ; Bottom border
+    mov cx, 80
+    mov di, 24 * 160         ; Start at bottom row
+BottomBorder:
+    mov byte [es:di], Border_char
+    mov byte [es:di+1], 0x07 ; White color
+    add di, 2
+    loop BottomBorder
+
+    ; Left and right borders
+    mov cx, 23              ; Screen height (excluding top/bottom rows)
+    mov di, 160             ; Start at row 1, column 0
+LeftBorder:
+    mov byte [es:di], 0xBA   ; '║' character
+    mov byte [es:di+1], 0x07 ; White color
+    add di, 160             ; Move to next row
+    loop LeftBorder
+
+    mov cx, 23
+    mov di, 160 + 158        ; Start at row 1, last column
+RightBorder:
+    mov byte [es:di], 0xBA   ; '║' character
+    mov byte [es:di+1], 0x07 ; White color
+    add di, 160             ; Move to next row
+    loop RightBorder
+
+    ret
+
+;----------------------------------------
+; Display "Game Ended" Message
+;----------------------------------------
+
+display_game_end:
+    mov ah, 0x13            ; BIOS Teletype function
+    mov al, 1               ; Write string
+    mov bh, 0               ; Page number
+    mov bl, 0x0C            ; Red color
+    mov dx, 5 * 256 + 30    ; Row 5, Column 30 (centered)
+    mov cx, 10              ; Length of "GAME OVER!"
+    push cs
+    pop es                  ; Set ES to current segment
+    mov bp, GameEnd_string  ; Pointer to string
+    int 0x10                ; Call BIOS
+    ret
+
+;----------------------------------------
+; Display Winning Player Message
+;----------------------------------------
+
+display_playerA_win:
+    mov ah, 0x13            ; BIOS Teletype function
+    mov al, 1               ; Write string
+    mov bh, 0               ; Page number
+    mov bl, 0x0A            ; Green color
+    mov dx, 10 * 256 + 28   ; Row 10, Column 28 (centered)
+    mov cx, 15              ; Length of "PLAYER A WINS!"
+    push cs
+    pop es                  ; Set ES to current segment
+    mov bp, PlayerA_string  ; Pointer to string
+    int 0x10                ; Call BIOS
+
+    ret
+	
+display_playerB_win:
+    mov ah, 0x13            ; BIOS Teletype function
+    mov al, 1               ; Write string
+    mov bh, 0               ; Page number
+    mov bl, 0x0A            ; Green color
+    mov dx, 10 * 256 + 28   ; Row 10, Column 28 (centered)
+    mov cx, 15              ; Length of "PLAYER B WINS!"
+    push cs
+    pop es                  ; Set ES to current segment
+    mov bp, PlayerB_string  ; Pointer to string
+    int 0x10                ; Call BIOS
+
+    ret	
+	
+;----------------------------------------
 ; Display Player A's Scores
 ;----------------------------------------
 A_Scores_display:
     call clearScreen       ; Clear the screen
-    pusha                  ; Save all registers
+    call draw_borders       ; Draw borders around the screen
+    call display_game_end   ; Display "Game Over" message
+    call display_playerA_win ; Display player-specific message
+    ret
 
-    ; Display setup for Player A's score
-    mov ah, 0x13           ; BIOS Teletype function
-    mov al, 1              ; Write string
-    mov bh, 0              ; Page number
-    mov bl, 7              ; Text color
-    mov dx, 0x0816         ; Cursor position (row and column)
-    mov cx, 29             ; Length of string
-    push cs
-    pop es                 ; Set ES to current segment
-    mov bp, GameEnd_string ; Pointer to string to display
-    INT 0x10               ; Call BIOS interrupt to display string
-	
-    ;Printing Win string
-	mov ah, 0x13           ; BIOS Teletype function
-    mov al, 1              ; Write string
-    mov bh, 0              ; Page number
-    mov bl, 7              ; Text color
-    mov dx, 0x0921        ; Cursor position (row and column)
-    mov cx, 13             ; Length of string
-    push cs
-    pop es                 ; Set ES to current segment
-    mov bp, playerA_wins_string ; Pointer to string to display
-    INT 0x10               ; Call BIOS interrupt to display string
-
-    popa                   ; Restore all registers
-    ret                    ; Return to caller
 
 ;----------------------------------------
 ; Display Player B's Scores
 ;----------------------------------------
 B_Scores_display:
     call clearScreen       ; Clear the screen
-    pusha                  ; Save all registers
+    call draw_borders       ; Draw borders around the screen
+    call display_game_end   ; Display "Game Over" message
+    call display_playerB_win ; Display player-specific message
+    ret
 
-    ; Display setup for Player B's score
-    mov ah, 0x13           ; BIOS Teletype function
-    mov al, 1              ; Write string
-    mov bh, 0              ; Page number
-    mov bl, 7              ; Text color
-    mov dx, 0x0816         ; Cursor position (row and column)
-    mov cx, 29             ; Length of string
-    push cs
-    pop es                 ; Set ES to current segment
-    mov bp, GameEnd_string ; Pointer to string to display
-    INT 0x10               ; Call BIOS interrupt to display string
-     
-	;Printing Win string
-	mov ah, 0x13           ; BIOS Teletype function
-    mov al, 1              ; Write string
-    mov bh, 0              ; Page number
-    mov bl, 7              ; Text color
-    mov dx, 0x0921         ; Cursor position (row and column)
-    mov cx, 13             ; Length of string
-    push cs
-    pop es                 ; Set ES to current segment
-    mov bp, playerB_wins_string ; Pointer to string to display
-    INT 0x10               ; Call BIOS interrupt to display string
-    	
-    popa                   ; Restore all registers
-    ret                    ; Return to caller
 
 ;----------------------------------------
 ; Move Paddle A to the Left
@@ -460,6 +510,44 @@ Increment_ScoreB:
     mov byte [cs:BallColumn], 40
     call findBallLocation
     mov word [es:si], 0x0F2A
+	
+	; Reset Paddles location as well
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleA_loc]
+	l1: mov word [es:di], 0x0720
+	add di,2
+	loop l1
+	
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleB_loc]
+	l2: mov word [es:di], 0x0720
+	add di,2
+	loop l2
+	
+	; Paddle for Player A
+    push byte 0       ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleA_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerA1:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerA1
+	
+	; Paddle for Player B
+    push byte 24      ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleB_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerB1:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerB1
+	
     jmp endSubroutine
 
 nextComparison3:
@@ -521,6 +609,43 @@ Increment_ScoreA:
     mov byte [cs:BallColumn], 40
     call findBallLocation
     mov word [es:si], 0x0F2A
+	
+; Reset Paddles location as well
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleA_loc]
+	l3: mov word [es:di], 0x0720
+	add di,2
+	loop l3
+	
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleB_loc]
+	l4: mov word [es:di], 0x0720
+	add di,2
+	loop l4
+	
+	; Paddle for Player A
+    push byte 0       ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleA_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerA2:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerA2
+	
+	; Paddle for Player B
+    push byte 24      ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleB_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerB2:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerB2
 
     mov word [cs:Right_Down_BounceFlag], 0
     mov word [cs:Right_Up_BounceFlag], 1
@@ -574,6 +699,43 @@ Increment_AScore:
     mov byte [cs:BallColumn], 40
     call findBallLocation
     mov word [es:si], 0x0F2A
+	
+	; Reset Paddles location as well
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleA_loc]
+	l5: mov word [es:di], 0x0720
+	add di,2
+	loop l5
+	
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleB_loc]
+	l6: mov word [es:di], 0x0720
+	add di,2
+	loop l6
+	
+	; Paddle for Player A
+    push byte 0       ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleA_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerA3:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerA3
+	
+	; Paddle for Player B
+    push byte 24      ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleB_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerB3:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerB3
     jmp endSubroutine
 
 nextComparison4:
@@ -624,6 +786,43 @@ Increment_Score_B:
     mov byte [cs:BallColumn], 40
     call findBallLocation
     mov word [es:si], 0x0F2A
+	
+	; Reset Paddles location as well
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleA_loc]
+	l7: mov word [es:di], 0x0720
+	add di,2
+	loop l7
+	
+	mov cx, 20          ; 20 cells wide
+	mov di, [cs:paddleB_loc]
+	l8: mov word [es:di], 0x0720
+	add di,2
+	loop l8
+	
+	; Paddle for Player A
+    push byte 0       ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleA_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerA4:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerA4
+	
+	; Paddle for Player B
+    push byte 24      ; Row number
+    push byte 30   ; Column number
+    call findLocation   ; Updates DI
+	mov word [cs:paddleB_loc], di
+    mov cx, 20          ; 20 cells wide
+
+PlayerB4:
+    mov word [es:di], 0xF120
+    add di, 2
+    loop PlayerB4
 
     mov word [cs:Left_Up_BounceFlag], 0
     mov word [cs:Left_Down_BounceFlag], 1
