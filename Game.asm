@@ -1,6 +1,8 @@
 [org 0x100]
 jmp start
 
+;####################### Game (ball movement) will be start by pressing 'sapce'####################
+
 oldtimer: dd 0
 oldkb: dd 0
 PlayerAturn : dw 1
@@ -18,7 +20,7 @@ A_Scores: dw 0
 B_Scores: dw 0
 GameEnd_string db "GAME OVER!", 0
 PlayerA_string db "PLAYER A WINS!", 0
-PlayerB_string db "PLAYER B WINS!", 0
+PlayerB_string db "PLAYER B WINS!", 0	
 Border_char db 0xCD         ; '═' character for borders
 
 
